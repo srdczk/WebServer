@@ -5,6 +5,9 @@ set(CMAKE_CXX_STANDARD 17)
 
 set(base_srcs
         base/AsyncLog.cpp
+        base/ConfigFileReader.cpp
+        base/Timestamp.cpp
+        net/Buffer.cpp
         main.cpp
         )
 
