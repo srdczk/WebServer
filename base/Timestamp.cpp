@@ -45,11 +45,12 @@ std::string Timestamp::ToString() const {
 }
 
 std::string Timestamp::FormatString(bool showMicro) const {
-    auto seconds = microSeconds_ / perSeconds_;
+    time_t seconds = microSeconds_ / perSeconds_;
 
     struct tm tm_time;
 
     struct tm *ptm;
+
     ptm = localtime(&seconds);
     tm_time = *ptm;
 

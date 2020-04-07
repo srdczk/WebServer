@@ -9,7 +9,7 @@ set(base_srcs
         base/Timestamp.cpp
         net/Buffer.cpp
         main.cpp
-        )
+        net/EventLoop.cpp net/EventLoop.h)
 
 add_executable(WebSocketServer ${base_srcs})
 
