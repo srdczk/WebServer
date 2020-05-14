@@ -4,6 +4,9 @@
 #include "Buffer.h"
 #include <errno.h>
 #include <sys/uio.h>
+#include <algorithm>
+#include <cstring>
+#include <cassert>
 
 Buffer::Buffer(uint32_t initSize):buffer_(initSize + PREPARE), readIndex_(PREPARE), writeIndex_(PREPARE) {}
 
@@ -126,22 +129,3 @@ int32_t Buffer::ReadFd(int fd, int *err) {
     }
     return static_cast<int32_t>(n);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

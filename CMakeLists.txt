@@ -1,16 +1,20 @@
 cmake_minimum_required(VERSION 3.10)
-project(WEB_SOCKET_SERVER)
+project(WebServer)
 
 set(CMAKE_CXX_STANDARD 17)
 
-set(base_srcs
-        base/AsyncLog.cpp
-        base/ConfigFileReader.cpp
-        base/Timestamp.cpp
-        net/Buffer.cpp
+FILE(GLOB BASE_SOURCE "base/*.cpp")
+FILE(GLOB BASE_HEADER "base/*.h")
+
+FILE(GLOB NET_SOURCE "net/*.cpp")
+FILE(GLOB NET_HEADER "net/*.h")
+
+add_executable(WebServer
+        ${BASE_SOURCE}
+        ${BASE_HEADER}
+        ${NET_SOURCE}
+        ${NET_HEADER}
         main.cpp
-        net/EventLoop.cpp net/EventLoop.h)
+        )
 
-add_executable(WebSocketServer ${base_srcs})
-
-target_link_libraries(WebSocketServer pthread)
+target_link_libraries(WebServer pthread)

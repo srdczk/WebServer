@@ -1,26 +1,14 @@
 //
-// Created by srdczk on 2020-04-07.
+// Created by Admin on 2020/5/14.
 //
 
-#pragma once
+#ifndef WEBSERVER_EVENTLOOP_H
+#define WEBSERVER_EVENTLOOP_H
 
-#include <cstdint>
-#include <memory>
-// 事件循环， 不可复制
 
-class EventLoop : std::enable_shared_from_this<EventLoop> {
-public:
-    EventLoop();
-    EventLoop(const EventLoop &) = delete;
-    EventLoop &operator=(const EventLoop &) = delete;
-    void AssertInLoopThread();
-    void Loop();
-private:
-    bool IsInLoopThread() const;
-    void AbortNotInThread();
-    bool looping_;
-    uint64_t threadId_;
+class EventLoop {
+
 };
 
 
-
+#endif //WEBSERVER_EVENTLOOP_H
