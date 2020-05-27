@@ -7,16 +7,30 @@
 
 #include <unistd.h>
 #include <fcntl.h>
+#include <string>
+#include <cstdint>
 
 //util class
 class NetHelper {
 public:
-    static void SetNonBlocking(int fd);
-private:
     NetHelper() = delete;
     ~NetHelper() = delete;
     NetHelper(const NetHelper &) = delete;
     NetHelper &operator=(const NetHelper &) = delete;
+    int ReadN(int fd, void *buff, uint32_t n);
+    int ReadN(int fd, std::string &buffer);
+    int ReadN(int fd, std::string &buffer, bool &zero);
+    int WriteN(int fd, void *buff, size_t n);
+    int WriteN(int fd, std::string &buff);
+
+    static void IgnorePipe();
+    static void SetNonBlocking(int fd);
+    static void SetNodelay(int fd);
+    static void ShutdownWR(int fd);
+    static int BindAndListen(int port);
+
+private:
+    static const size_t kMaxBuffer;
 };
 
 
