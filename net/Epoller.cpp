@@ -7,9 +7,11 @@
 #include <unistd.h>
 #include "../base/AsyncLog.h"
 
+const size_t Epoller::kMaxEvents = 4096;
 
+const int Epoller::kEpollWait = 100000;
 
-Epoller::Epoller() {
+Epoller::Epoller(): readyEvents_(kMaxEvents) {
     assert((epFd_ = epoll_create(EPOLL_CLOEXEC)) != -1);
 }
 
@@ -17,71 +19,79 @@ Epoller::~Epoller() {
     close(epFd_);
 }
 
-int Epoller::EpollCtl(int fd, int op, int flag) {
-    // ET MOD + NOBLOCKING
-
-    struct epoll_event event;
-    event.data.fd = fd;
-    event.events = flag;
-
-    if (!epoll_ctl(epFd_, op, fd, &event)) {
-        LOG_DEBUG("epoll op: fd = %d, op = %d", fd, op);
-        return 0;
-    }
-
-    switch (op) {
-        case EPOLL_CTL_MOD:
-            if (errno == ENOENT) {
-                if (!epoll_ctl(epFd_,EPOLL_CTL_ADD, fd, &event)) {
-                    LOG_DEBUG("epoll mod %d on %d retried as add, succeed", op, fd);
-                    return 0;
-                } else {
-                    LOG_ERROR("epoll mod %d on %d retried as add, failed", op, fd);
-                    return -1;
-                }
-            }
-            break;
-        case EPOLL_CTL_ADD:
-            if (errno == EEXIST) {
-                if (!epoll_ctl(epFd_, EPOLL_CTL_MOD, fd, &event)) {
-                    LOG_DEBUG("epoll add %d on %d retried as mod, succeed", op, fd);
-                    return 0;
-                } else {
-                    LOG_ERROR("epoll add %d on %d retried as mod, failed", op, fd);
-                    return -1;
-                }
-            }
-            break;
-        case EPOLL_CTL_DEL:
-            if (errno == ENOENT || errno == EBADF || errno == EPERM) {
-                std::string strErr = errno == ENOENT ? "ENOENT" : (errno == EBADF ? "EBADF" : "EPERM");
-                LOG_DEBUG("epoll del %d on %d: del failed, errno %s",  op, fd, strErr.data());
-                return 0;
-            }
-            break;
-        default:
-            break;
-    }
-
-    LOG_ERROR("epoll ctl %d on %d failed!", op, fd);
-    return -1;
-
-}
-
-int Epoller::EpollWait(Epoller::ReadyEvents &events, int timeout) {
-    int res = epoll_wait(epFd_, &events[0], events.capacity(), timeout);
-    if (res == -1) {
-        if (errno != EINTR) {
-            LOG_ERROR("epoll wait failed!");
-            return -1;
+std::vector<Epoller::ChannelPtr> Epoller::ReadyChannels(int num) {
+    // from channel Map
+    std::vector<Epoller::ChannelPtr> res;
+    for (int i = 0; i < num; ++i) {
+        auto event = readyEvents_[i];
+        auto channel = channelMap_[event.data.fd];
+        if (channel) {
+            channel->SetREvents(event.events);
+            channel->SetEvents(0);
+            res.push_back(channel);
+        } else {
+            LOG_DEBUG("No Channel for Fd: %d", event.data.fd);
         }
-        return 0;
-    }
-    // resize
-    if (res == events.capacity()) {
-        events.resize(2 * events.capacity());
-        LOG_DEBUG("events vector resize");
     }
     return res;
 }
+
+void Epoller::EpollAdd(Epoller::ChannelPtr channel, int timeout) {
+    // add fd
+    auto fd = channel->Fd();
+    struct epoll_event epEvent;
+    epEvent.events = static_cast<uint32_t>(channel->Events());
+    epEvent.data.fd = fd;
+
+    // update lastEvents
+    channel->UpdateLastEvents();
+
+    channelMap_[fd] = channel;
+    if (epoll_ctl(epFd_, EPOLL_CTL_ADD, fd, &epEvent) == -1) {
+        LOG_ERROR("Epoll Create Error, fd:%d", fd);
+        channelMap_.erase(fd);
+    }
+
+    // TODO: timeout use to add to TimerHeap
+}
+
+void Epoller::EpollMod(Epoller::ChannelPtr channel, int timeout) {
+    auto fd = channel->Fd();
+    // last events != events => need update
+    if (!channel->UpdateLastEvents()) {
+        struct epoll_event epEvent;
+        epEvent.events = static_cast<uint32_t>(channel->Events());
+        epEvent.data.fd = fd;
+
+        if (epoll_ctl(epFd_, EPOLL_CTL_MOD, fd, &epEvent) == -1) {
+            LOG_ERROR("Epoll Modify Error, fd:%d", fd);
+            channelMap_.erase(fd);
+        }
+
+    }
+
+    // TODO: timeout use to add to TimerHeap
+}
+
+void Epoller::EpollDel(Epoller::ChannelPtr channel) {
+    auto fd = channel->Fd();
+    struct epoll_event epEvent;
+    epEvent.data.fd = fd;
+    epEvent.events = static_cast<uint32_t>(channel->LastEvents());
+    if (epoll_ctl(epFd_, EPOLL_CTL_DEL, fd, &epEvent) == -1) {
+        LOG_ERROR("Epoll Delete Error, fd:%d", fd);
+    }
+    channelMap_.erase(fd);
+}
+
+std::vector<Epoller::ChannelPtr> Epoller::EpollWait() {
+    // epoll wait for long time
+    while (true) {
+        int cnt = epoll_wait(epFd_, &*readyEvents_.begin(), readyEvents_.size(), kEpollWait);
+        if (cnt < 0) LOG_ERROR("Epoll Wait Error");
+        auto res = ReadyChannels(cnt);
+        if (res.size()) return res;
+    }
+}
+
 

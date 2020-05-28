@@ -12,41 +12,20 @@
 
 class EventLoop;
 
+
 class Channel {
 public:
-    typedef std::function<void (EventLoop &, std::shared_ptr<Channel>)> CallbackType;
-    Channel(int fd);
-
-    void SetReadCallback(CallbackType cb) { readCb_ = cb; }
-    void SetWriteCallback(CallbackType cb) { writeCb_ = cb; }
-    void SetErrorCallback(CallbackType cb) { errCb_ = cb; }
+    void SetREvents(int revents) { revents_ = revents; }
     void SetEvents(int events) { events_ = events; }
+    bool UpdateLastEvents();
     int Fd() { return fd_; }
     int Events() { return events_; }
-    Buffer &ReadBuffer() { return readBuffer_; }
-    Buffer &WriteBuffer() { return writeBuffer_; }
-
-    timeval &LastActive() { return lastActive_; }
-
-    void SetLastActive(const struct timeval &time);
-
-    int HeapIndex() { return heapIndex_; }
-    void SetHeapIndex(int index) { heapIndex_ = index; }
-
-    void HandleEvent(EventLoop &loop, std::shared_ptr<Channel> ptrChannel, int events);
-
+    int LastEvents() { return lastEvents_; }
 private:
     int fd_;
+    int revents_;
     int events_;
-    CallbackType writeCb_;
-    CallbackType readCb_;
-    CallbackType errCb_;
-
-    Buffer readBuffer_;
-    Buffer writeBuffer_;
-
-    timeval lastActive_;
-    int heapIndex_;
+    int lastEvents_;
 };
 
 #endif //WEBSERVER_CHANNEL_H
