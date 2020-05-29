@@ -12,6 +12,19 @@
 
 class EventLoopThread {
 public:
+    EventLoopThread();
+    ~EventLoopThread();
+
+    // create Event Loop
+    EventLoop *Loop();
+private:
+    void ThreadFunc();
+private:
+    EventLoop *loop_;
+    bool exiting_;
+    std::shared_ptr<std::thread> thread_;
+    std::mutex mutex_;
+    std::condition_variable cv_;
 };
 
 

@@ -9,6 +9,19 @@
 
 class EventLoopThreadPool {
 public:
+    EventLoopThreadPool(EventLoop *loop, int threadNum = std::thread::hardware_concurrency());
+    ~EventLoopThreadPool() { LOG_DEBUG("Thread Pool Exit"); }
+
+    void Start();
+
+    EventLoop *NextLoop();
+private:
+    EventLoop *loop_;
+    bool started_;
+    int threadNum_;
+    int next_;
+    std::vector<std::shared_ptr<EventLoopThread>> threads_;
+    std::vector<EventLoop *> loops_;
 };
 
 

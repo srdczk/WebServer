@@ -2,7 +2,7 @@
 // Created by srdczk on 2020/4/5.
 //
 #include "base/AsyncLog.h"
-#include "net/EventLoop.h"
+#include "net/TcpServer.h"
 #include <functional>
 #include <iostream>
 void func(int a, int b, int c) {
@@ -25,13 +25,11 @@ void Heapify(std::vector<int> &a, int index, int size) {
 EventLoop *g_loop;
 
 int main() {
-
+    CAsyncLog::Init("TCPSERVERDUGOUZI");
     EventLoop loop;
-    g_loop = &loop;
-    std::thread t([] {
-        EventLoop p;
-        p.Loop();
-    });
-    t.join();
+    TcpServer server(&loop, std::thread::hardware_concurrency(), 9090);
+    server.Start();
+    loop.Loop();
+    CAsyncLog::Uninit();
     return 0;
 }

@@ -45,7 +45,7 @@ int NetHelper::BindAndListen(int port) {
     memset(&saddr, '\0', sizeof(saddr));
     saddr.sin_family = AF_INET;
     saddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    saddr.sin_port = htons(static_cast<uint16_t>(port));
+    saddr.sin_port = htons(port);
 
     // bind and listen
     if (bind(sfd, (struct sockaddr *)&saddr, sizeof(saddr)) == -1) {

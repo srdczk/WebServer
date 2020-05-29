@@ -17,11 +17,11 @@ public:
     ~NetHelper() = delete;
     NetHelper(const NetHelper &) = delete;
     NetHelper &operator=(const NetHelper &) = delete;
-    int ReadN(int fd, void *buff, uint32_t n);
-    int ReadN(int fd, std::string &buffer);
-    int ReadN(int fd, std::string &buffer, bool &zero);
-    int WriteN(int fd, void *buff, size_t n);
-    int WriteN(int fd, std::string &buff);
+    static int ReadN(int fd, void *buff, uint32_t n);
+    static int ReadN(int fd, std::string &buffer);
+    static int ReadN(int fd, std::string &buffer, bool &zero);
+    static int WriteN(int fd, void *buff, size_t n);
+    static int WriteN(int fd, std::string &buff);
 
     static void IgnorePipe();
     static void SetNonBlocking(int fd);
