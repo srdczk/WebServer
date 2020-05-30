@@ -4,6 +4,7 @@
 
 #include "TcpServer.h"
 #include "NetHelper.h"
+#include "HttpMessage.h"
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -53,13 +54,9 @@ void TcpServer::HandleNewConnect() {
         auto loop = threadPool_->NextLoop();
         LOG_DEBUG("New connection from %s: %d", inet_ntoa(caddr.sin_addr), ntohs(caddr.sin_port));
         NetHelper::SetNonBlocking(cfd);
-        auto newChannel = std::make_shared<Channel>(loop, cfd);
-        // has thing to write,
-        loop->QueueInLoop([&] {
-            newChannel->SetEvents(EPOLLIN | EPOLLET | EPOLLONESHOT);
-            newChannel->SetReadCallback(std::bind(&Channel::EchoRead, newChannel));
-            loop->AddToPoller(newChannel);
-        });
+        NetHelper::SetNodelay(cfd);
+        auto message = std::make_shared<HttpMessage>(loop, cfd);
+        loop->QueueInLoop(std::bind(&HttpMessage::NewEvent, message));
     }
     acceptChannel_->SetEvents(EPOLLET | EPOLLIN);
 }

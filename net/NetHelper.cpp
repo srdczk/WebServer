@@ -74,7 +74,7 @@ void NetHelper::IgnorePipe() {
 }
 
 int NetHelper::ReadN(int fd, void *buff, uint32_t n) {
-    ssize_t left = n;
+    size_t left = n;
     ssize_t hRead = 0;
     ssize_t readSum = 0;
     char *restore = static_cast<char *>(buff);
@@ -143,7 +143,7 @@ int NetHelper::ReadN(int fd, std::string &buffer, bool &zero) {
 int NetHelper::WriteN(int fd, void *buff, size_t n) {
     ssize_t writeSum = 0;
     ssize_t hWrite = 0;
-    ssize_t left = n;
+    size_t left = n;
     char *output = static_cast<char *>(buff);
     while (left > 0) {
         if ((hWrite = write(fd, output, left)) < 0) {
@@ -152,6 +152,7 @@ int NetHelper::WriteN(int fd, void *buff, size_t n) {
             } else if (errno == EAGAIN) {
                 return static_cast<int>(writeSum);
             } else {
+                char *p = strerror(errno);
                 return -1;
             }
         }
@@ -165,7 +166,7 @@ int NetHelper::WriteN(int fd, void *buff, size_t n) {
 int NetHelper::WriteN(int fd, std::string &buff) {
     ssize_t writeSum = 0;
     ssize_t hWrite = 0;
-    ssize_t left = buff.length();
+    size_t left = buff.length();
     char *output = buff.data();
     while (left > 0) {
         if ((hWrite = write(fd, output, left)) < 0) {

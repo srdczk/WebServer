@@ -6,13 +6,25 @@
 #define WEBSERVER_HTTPMESSAGE_H
 
 #include "Timer.h"
+#include "Channel.h"
 
 class TimerNode;
 
 class HttpMessage {
 public:
+    HttpMessage(EventLoop *loop, int fd);
     void HandleClose() {}
     void SetTimer(std::shared_ptr<TimerNode> timer) {}
+    void NewEvent();
+private:
+    void ReadCallback();
+    void WriteCallback();
+    void UpdateCallback();
+private:
+    EventLoop *loop_;
+    int fd_;
+    std::shared_ptr<Channel> channel_;
+    std::string buff;
 };
 
 

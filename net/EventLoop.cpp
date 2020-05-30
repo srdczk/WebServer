@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sys/poll.h>
 #include <sys/eventfd.h>
+#include <cstring>
 
 __thread EventLoop *threadEventLoop = nullptr;
 
@@ -38,6 +39,11 @@ wakeupChannel_(std::make_shared<Channel>(this, wakeupFd_)) {
     } else {
         threadEventLoop = this;
     }
+    // poller, have not add to poller
+    wakeupChannel_->SetEvents(EPOLLIN | EPOLLET);
+    wakeupChannel_->SetReadCallback(std::bind(&EventLoop::HandleRead, this));
+    wakeupChannel_->SetUpdateCallback(std::bind(&EventLoop::HandleUpdate, this));
+    poller_->EpollAdd(wakeupChannel_, 0);
 }
 
 bool EventLoop::InThisThread() {
@@ -71,9 +77,10 @@ int EventLoop::CreateEventFd() {
 }
 
 void EventLoop::Wakeup() {
-    int32_t send = 1;
-    auto res = NetHelper::WriteN(wakeupFd_, (void*)(&send), sizeof(send));
-    if (res < sizeof(int32_t)) {
+    uint64_t send = 1;
+    ssize_t res = NetHelper::WriteN(wakeupFd_, (char*)(&send), sizeof send);
+    if (res != sizeof(send)) {
+        char *p = strerror(errno);
         LOG_DEBUG("EventLoop::Wakeup Write To %d", res);
     }
 }

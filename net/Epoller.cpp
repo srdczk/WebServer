@@ -6,6 +6,7 @@
 #include <cassert>
 #include <unistd.h>
 #include "../base/AsyncLog.h"
+#include <cstring>
 
 const size_t Epoller::kMaxEvents = 4096;
 
@@ -87,8 +88,14 @@ void Epoller::EpollDel(Epoller::ChannelPtr channel) {
 std::vector<Epoller::ChannelPtr> Epoller::EpollWait() {
     // epoll wait for long time
     while (true) {
-        int cnt = epoll_wait(epFd_, &*readyEvents_.begin(), readyEvents_.size(), kEpollWait);
-        if (cnt < 0) LOG_ERROR("Epoll Wait Error");
+        int cnt = epoll_wait(epFd_, &*readyEvents_.begin(), readyEvents_.size(), -1);
+        if (cnt <= 0) {
+            std::string errString(strerror(errno));
+            if (errString != "Interrupted system call") {
+                LOG_DEBUG("Epoll Wait Error");
+            }
+            continue;
+        }
         auto res = ReadyChannels(cnt);
         if (res.size()) return res;
     }
