@@ -10,6 +10,7 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 
 const size_t NetHelper::kMaxBuffer = 4096;
 
@@ -175,6 +176,7 @@ int NetHelper::WriteN(int fd, std::string &buff) {
             } else if (errno == EAGAIN) {
                 break;
             } else {
+                std::string p(strerror(errno));
                 return -1;
             }
         }
@@ -187,6 +189,15 @@ int NetHelper::WriteN(int fd, std::string &buff) {
     else
         buff = buff.substr(static_cast<unsigned long>(writeSum));
     return static_cast<int>(writeSum);
+}
+
+uint64_t NetHelper::GetExpiredTime(uint64_t timeout) {
+    struct timeval now;
+    gettimeofday(&now, nullptr);
+
+    // return ms
+
+    return (now.tv_sec) * 1000 + now.tv_usec / 1000 + timeout;
 }
 
 

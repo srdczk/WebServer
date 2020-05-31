@@ -63,6 +63,7 @@ void EventLoop::Loop() {
         handlingEvent_ = false;
         DoFunctions();
         // TODO:remove inactive connections
+//        poller_->HandleExpired();
     }
     looping_ = false;
 }

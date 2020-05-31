@@ -5,7 +5,7 @@
 #ifndef WEBSERVER_HTTPMESSAGE_H
 #define WEBSERVER_HTTPMESSAGE_H
 
-#include "Timer.h"
+//#include "Timer.h"
 #include "Channel.h"
 
 class TimerNode;
@@ -21,6 +21,7 @@ private:
     void WriteCallback();
     void UpdateCallback();
 private:
+    static const size_t kKeepMilSeconds;
     EventLoop *loop_;
     int fd_;
     std::shared_ptr<Channel> channel_;

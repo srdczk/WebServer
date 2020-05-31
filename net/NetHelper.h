@@ -28,6 +28,7 @@ public:
     static void SetNodelay(int fd);
     static void ShutdownWR(int fd);
     static int BindAndListen(int port);
+    static uint64_t GetExpiredTime(uint64_t timeout);
 
 private:
     static const size_t kMaxBuffer;

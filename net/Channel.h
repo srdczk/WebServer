@@ -26,6 +26,12 @@ public:
     int Events() { return events_; }
     int LastEvents() { return lastEvents_; }
 
+    int32_t Index() const { return index_; }
+    void SetIndex(int32_t index) { index_ = index; }
+
+    uint64_t ExpiredTime() const { return expiredTime_; }
+    void SetExpiredTime(uint64_t expiredTime) { expiredTime_ = expiredTime; }
+
     void SetReadCallback(CallbackType &&readCb) { readCb_ = readCb; }
     void SetWriteCallback(CallbackType &&writeCb) { writeCb_ = writeCb; }
     void SetUpdateCallback(CallbackType &&updateCb) { updateCb_ = updateCb; }
@@ -44,6 +50,9 @@ private:
     int revents_;
     int events_;
     int lastEvents_;
+    // Channel, index in Heap
+    int32_t index_;
+    uint64_t expiredTime_;
     CallbackType readCb_;
     CallbackType writeCb_;
     CallbackType updateCb_;

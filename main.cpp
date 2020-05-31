@@ -27,7 +27,7 @@ EventLoop *g_loop;
 int main() {
     CAsyncLog::Init("TCPSERVERDUGOUZI");
     EventLoop loop;
-    TcpServer server(&loop, std::thread::hardware_concurrency(), 9090);
+    TcpServer server(&loop, 2, 9090);
     server.Start();
     loop.Loop();
     CAsyncLog::Uninit();

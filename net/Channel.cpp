@@ -7,8 +7,22 @@
 #include "NetHelper.h"
 #include <sys/epoll.h>
 
+//
+//int lastEvents_;
+//// Channel, index in Heap
+//int index_;
+//uint64_t expiredTime_;
+//CallbackType readCb_;
 
-Channel::Channel(EventLoop *loop, int fd): loop_(loop), fd_(fd), revents_(0), events_(0), lastEvents_(0) { }
+Channel::Channel(EventLoop *loop, int fd):
+loop_(loop),
+fd_(fd),
+revents_(0),
+events_(0),
+lastEvents_(0),
+// not In Heap
+index_(-1),
+expiredTime_(0) { }
 
 bool Channel::UpdateLastEvents() {
     bool res = (lastEvents_ == events_);

@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <sys/epoll.h>
 #include "Channel.h"
+#include "Heap.h"
 
 class Epoller {
 public:
@@ -26,6 +27,8 @@ public:
     void EpollDel(ChannelPtr channel);
 
     std::vector<ChannelPtr> EpollWait();
+
+    void HandleExpired();
 private:
     std::vector<ChannelPtr> ReadyChannels(int num);
 private:
@@ -35,6 +38,7 @@ private:
     ReadyEvents readyEvents_;
     // update revents
     std::unordered_map<int, ChannelPtr> channelMap_;
+    Heap heap_;
 };
 
 

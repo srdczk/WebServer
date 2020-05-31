@@ -3,6 +3,7 @@
 //
 
 #include "Epoller.h"
+#include "NetHelper.h"
 #include <cassert>
 #include <unistd.h>
 #include "../base/AsyncLog.h"
@@ -38,6 +39,14 @@ std::vector<Epoller::ChannelPtr> Epoller::ReadyChannels(int num) {
 }
 
 void Epoller::EpollAdd(Epoller::ChannelPtr channel, int timeout) {
+    if (timeout > 0) {
+        if (channel->Index() == -1) {
+            heap_.Insert(channel, static_cast<uint64_t>(timeout));
+        } else {
+            // in heap
+            heap_.Change(channel, static_cast<uint64_t>(timeout));
+        }
+    }
     // add fd
     auto fd = channel->Fd();
     struct epoll_event epEvent;
@@ -57,6 +66,13 @@ void Epoller::EpollAdd(Epoller::ChannelPtr channel, int timeout) {
 }
 
 void Epoller::EpollMod(Epoller::ChannelPtr channel, int timeout) {
+    if (timeout > 0) {
+        if (channel->Index() == -1) {
+            heap_.Insert(channel, static_cast<uint64_t>(timeout));
+        } else {
+            heap_.Change(channel, static_cast<uint64_t>(timeout));
+        }
+    }
     auto fd = channel->Fd();
     // last events != events => need update
     if (!channel->UpdateLastEvents()) {
@@ -75,6 +91,9 @@ void Epoller::EpollMod(Epoller::ChannelPtr channel, int timeout) {
 }
 
 void Epoller::EpollDel(Epoller::ChannelPtr channel) {
+    if (channel->Index() != -1) {
+        heap_.Delete(channel);
+    }
     auto fd = channel->Fd();
     struct epoll_event epEvent;
     epEvent.data.fd = fd;
@@ -98,6 +117,19 @@ std::vector<Epoller::ChannelPtr> Epoller::EpollWait() {
         }
         auto res = ReadyChannels(cnt);
         if (res.size()) return res;
+    }
+}
+
+void Epoller::HandleExpired() {
+    // heap
+    auto now = NetHelper::GetExpiredTime(0);
+    while (heap_.Size()) {
+        auto top = heap_.Top();
+        if (top->ExpiredTime() < now) {
+            EpollDel(top);
+            LOG_DEBUG("Close Connection:%d", top->Fd());
+            close(top->Fd());
+        } else break;
     }
 }
 
