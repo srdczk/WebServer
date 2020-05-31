@@ -13,9 +13,11 @@ class TimerNode;
 class HttpMessage {
 public:
     HttpMessage(EventLoop *loop, int fd);
+    ~HttpMessage();
     void HandleClose() {}
     void SetTimer(std::shared_ptr<TimerNode> timer) {}
     void NewEvent();
+    std::shared_ptr<Channel> GetChannel() { return channel_; }
 private:
     void ReadCallback();
     void WriteCallback();

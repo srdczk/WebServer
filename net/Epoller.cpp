@@ -39,16 +39,21 @@ std::vector<Epoller::ChannelPtr> Epoller::ReadyChannels(int num) {
 }
 
 void Epoller::EpollAdd(Epoller::ChannelPtr channel, int timeout) {
-    if (timeout > 0) {
-        if (channel->Index() == -1) {
-            heap_.Insert(channel, static_cast<uint64_t>(timeout));
-        } else {
-            // in heap
-            heap_.Change(channel, static_cast<uint64_t>(timeout));
-        }
-    }
+
+//    if (timeout > 0) {
+//        if (channel->Index() == -1) {
+//            heap_.Insert(channel, static_cast<uint64_t>(timeout));
+//        } else {
+//            // in heap
+//            heap_.Change(channel, static_cast<uint64_t>(timeout));
+//        }
+//    }
     // add fd
+
     auto fd = channel->Fd();
+    if (timeout > 0) {
+        httpMap_[fd] = channel->Holder();
+    }
     struct epoll_event epEvent;
     epEvent.events = static_cast<uint32_t>(channel->Events());
     epEvent.data.fd = fd;
@@ -60,19 +65,20 @@ void Epoller::EpollAdd(Epoller::ChannelPtr channel, int timeout) {
     if (epoll_ctl(epFd_, EPOLL_CTL_ADD, fd, &epEvent) == -1) {
         LOG_ERROR("Epoll Create Error, fd:%d", fd);
         channelMap_.erase(fd);
+        // http Map erase (erase HttpMessage -> close Connection)
     }
 
     // TODO: timeout use to add to TimerHeap
 }
 
 void Epoller::EpollMod(Epoller::ChannelPtr channel, int timeout) {
-    if (timeout > 0) {
-        if (channel->Index() == -1) {
-            heap_.Insert(channel, static_cast<uint64_t>(timeout));
-        } else {
-            heap_.Change(channel, static_cast<uint64_t>(timeout));
-        }
-    }
+//    if (timeout > 0) {
+//        if (channel->Index() == -1) {
+//            heap_.Insert(channel, static_cast<uint64_t>(timeout));
+//        } else {
+//            heap_.Change(channel, static_cast<uint64_t>(timeout));
+//        }
+//    }
     auto fd = channel->Fd();
     // last events != events => need update
     if (!channel->UpdateLastEvents()) {
@@ -91,9 +97,9 @@ void Epoller::EpollMod(Epoller::ChannelPtr channel, int timeout) {
 }
 
 void Epoller::EpollDel(Epoller::ChannelPtr channel) {
-    if (channel->Index() != -1) {
-        heap_.Delete(channel);
-    }
+//    if (channel->Index() != -1) {
+//        heap_.Delete(channel);
+//    }
     auto fd = channel->Fd();
     struct epoll_event epEvent;
     epEvent.data.fd = fd;
@@ -102,6 +108,8 @@ void Epoller::EpollDel(Epoller::ChannelPtr channel) {
         LOG_ERROR("Epoll Delete Error, fd:%d", fd);
     }
     channelMap_.erase(fd);
+    // httpMap_.erase(fd)
+
 }
 
 std::vector<Epoller::ChannelPtr> Epoller::EpollWait() {

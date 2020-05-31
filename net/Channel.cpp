@@ -76,6 +76,12 @@ void Channel::EchoRead() {
     NetHelper::WriteN(fd_, res);
 }
 
+std::shared_ptr<HttpMessage> Channel::Holder() {
+    //
+    std::shared_ptr<HttpMessage> res(http_.lock());
+    return res;
+}
+
 
 
 

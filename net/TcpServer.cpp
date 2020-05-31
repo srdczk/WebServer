@@ -56,7 +56,10 @@ void TcpServer::HandleNewConnect() {
         NetHelper::SetNonBlocking(cfd);
         NetHelper::SetNodelay(cfd);
         auto message = std::make_shared<HttpMessage>(loop, cfd);
+        message->GetChannel()->SetHolder(message);
+        // should not been ~
         loop->QueueInLoop(std::bind(&HttpMessage::NewEvent, message));
+        // message -> ~HttpMessage
     }
     acceptChannel_->SetEvents(EPOLLET | EPOLLIN);
 }

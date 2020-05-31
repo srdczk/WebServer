@@ -13,6 +13,8 @@
 
 class EventLoop;
 
+class HttpMessage;
+
 class Channel {
 public:
     typedef std::function<void()> CallbackType;
@@ -44,6 +46,9 @@ public:
     void HandleUpdate();
     void HandleEvents();
 
+    std::shared_ptr<HttpMessage> Holder();
+    void SetHolder(std::shared_ptr<HttpMessage> http) { http_ = http; }
+
 private:
     EventLoop *loop_;
     int fd_;
@@ -57,6 +62,7 @@ private:
     CallbackType writeCb_;
     CallbackType updateCb_;
     CallbackType errorCb_;
+    std::weak_ptr<HttpMessage> http_;
 };
 
 #endif //WEBSERVER_CHANNEL_H

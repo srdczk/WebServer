@@ -7,6 +7,9 @@
 #include "EventLoop.h"
 #include <iostream>
 #include <sys/epoll.h>
+#include <sys/time.h>
+#include <sys/timeb.h>
+#include <cstring>
 
 char favicon[555] = {
         '\x89', 'P',    'N',    'G',    '\xD',  '\xA',  '\x1A', '\xA',  '\x0',
@@ -84,18 +87,45 @@ channel_(std::make_shared<Channel>(loop_, fd)) {
 }
 
 void HttpMessage::ReadCallback() {
+    // echo Server
+//    std::string res;
+//    NetHelper::ReadN(fd_, res);
+//    for (auto &c : res) {
+//        if (c >= 'a' && c <= 'z') {
+//            c = c - 'a' + 'A';
+//        }
+//    }
+//    std::string p = "ZUZUNAZI";
+//    NetHelper::WriteN(fd_, p);
+//    // http Message Can't be
+    struct timeb tp;
+    ftime(&tp);
+    time_t now = tp.time;
+    tm time;
+    localtime_r(&now, &time);
+    char timeString[64];
+    memset(timeString, '\0', sizeof(now));
+    snprintf(timeString, sizeof(timeString), "%04d-%02d-%02d %02d:%02d:%02d:%03d", time.tm_year + 1900, time.tm_mon + 1, time.tm_mday, time.tm_hour, time.tm_min, time.tm_sec, tp.millitm);
     std::string res;
     NetHelper::ReadN(fd_, res);
-    std::cout << "THIS" << res << "\n";
-    std::string hello = "NIMASILE!";
-    std::string header = "HTTP/1.1 200 OK\r\n";
-    header += "Content-Type: text/plain\r\n";
+    std::cout << res;
+    std::string hello = "<h1>Hello Test!</h1>\r\n<hr>\r\n";
+    std::string nowString(timeString);
+    hello += nowString;
+    std::string header;
+    header += "HTTP/1.1 200 OK\r\n";
+//    header += "Content-Type: image/png\r\n";
+//    header += "Content-Length: " + std::to_string(sizeof(favicon)) + "\r\n";
+    header += "Content-Type: text/html\r\n";
     header += "Content-Length: " + std::to_string(hello.length()) + "\r\n";
-    header += "Server: LinYa's Web Server\r\n";
+    header += "Server: CZK's Web Server\r\n";
+
     header += "\r\n";
     header += hello;
+    // cgi dispatcher
+//    header += std::string(favicon, favicon + sizeof(favicon));
     NetHelper::WriteN(fd_, header);
-//    channel_->SetEvents(EPOLLET | EPOLLIN);
+    channel_->SetEvents(EPOLLET | EPOLLIN);
 }
 
 void HttpMessage::NewEvent() {
@@ -105,7 +135,11 @@ void HttpMessage::NewEvent() {
 
 
 void HttpMessage::UpdateCallback() {
-//    loop_->UpdatePoller(channel_, kKeepMilSeconds);
+    loop_->UpdatePoller(channel_, kKeepMilSeconds);
+}
+
+HttpMessage::~HttpMessage() {
+    LOG_DEBUG("HttpMessage From This");
 }
 
 

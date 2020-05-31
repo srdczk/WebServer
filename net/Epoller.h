@@ -38,6 +38,7 @@ private:
     ReadyEvents readyEvents_;
     // update revents
     std::unordered_map<int, ChannelPtr> channelMap_;
+    std::unordered_map<int, std::shared_ptr<HttpMessage>> httpMap_;
     Heap heap_;
 };
 
