@@ -1,6 +1,3 @@
-//
-// Created by Admin on 2020/5/14.
-//
 
 #include "NetHelper.h"
 #include <errno.h>
@@ -11,6 +8,8 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/time.h>
+#include <sys/stat.h>
+#include <dirent.h>
 
 const size_t NetHelper::kMaxBuffer = 4096;
 
@@ -86,6 +85,7 @@ int NetHelper::ReadN(int fd, void *buff, uint32_t n) {
             } else if (errno == EINTR) {
                 hRead = 0;
             } else {
+                char *p = strerror(errno);
                 return -1;
             }
         } else if (!hRead)
@@ -199,6 +199,151 @@ uint64_t NetHelper::GetExpiredTime(uint64_t timeout) {
 
     return (now.tv_sec) * 1000 + now.tv_usec / 1000 + timeout;
 }
+
+std::string NetHelper::FileType(const char *name) {
+    auto dot = strrchr(name, '.');
+    if (!dot)
+        return "text/plain; charset=utf-8";
+    if (strcmp(dot, ".html") == 0 || strcmp(dot, ".htm") == 0)
+        return "text/html; charset=utf-8";
+    if (strcmp(dot, ".jpg") == 0 || strcmp(dot, ".jpeg") == 0)
+        return "image/jpeg";
+    if (strcmp(dot, ".gif") == 0)
+        return "image/gif";
+    if (strcmp(dot, ".png") == 0)
+        return "image/png";
+    if (strcmp(dot, ".css") == 0)
+        return "text/css";
+    if (strcmp(dot, ".au") == 0)
+        return "audio/basic";
+    if (strcmp( dot, ".wav" ) == 0)
+        return "audio/wav";
+    if (strcmp(dot, ".avi") == 0)
+        return "video/x-msvideo";
+    if (strcmp(dot, ".mov") == 0 || strcmp(dot, ".qt") == 0)
+        return "video/quicktime";
+    if (strcmp(dot, ".mpeg") == 0 || strcmp(dot, ".mpe") == 0)
+        return "video/mpeg";
+    if (strcmp(dot, ".vrml") == 0 || strcmp(dot, ".wrl") == 0)
+        return "model/vrml";
+    if (strcmp(dot, ".midi") == 0 || strcmp(dot, ".mid") == 0)
+        return "audio/midi";
+    if (strcmp(dot, ".mp3") == 0)
+        return "audio/mpeg";
+    if (strcmp(dot, ".ogg") == 0)
+        return "application/ogg";
+    if (strcmp(dot, ".pac") == 0)
+        return "application/x-ns-proxy-autoconfig";
+
+    return "text/plain; charset=utf-8";
+}
+
+int NetHelper::GetLine(int cfd, char *buff, int size) {
+    int sum = 0;
+    char c = '\0';
+    // last buff must be '\0'
+    while (sum < size - 1 && c != '\n') {
+        ssize_t len = recv(cfd, &c, 1, 0);
+        if (len > 0) {
+            if (c == '\r') {
+                // peek a char ->
+                len = recv(cfd, &c, 1, MSG_PEEK);
+                if (len > 0 && c == '\n') {
+                    recv(cfd, &c, 1, 0);
+                } else {
+                    c = '\n';
+                }
+            }
+            buff[sum++] = c;
+        } else {
+            c = '\n';
+        }
+    }
+    buff[sum] = '\0';
+    return sum;
+}
+
+void NetHelper::HttpRequest(char *line, int cfd) {
+    char method[12], path[1024], protocol[12];
+    // 正则表达式
+    sscanf(line, "%[^ ] %[^ ] %[^ ]", method, path, protocol);
+    char *file = path + 1;
+    // 如果没有输入路径
+    if (!strcmp(path, "/")) {
+        file = "./";
+    }
+    struct stat st;
+    int ret = stat(file, &st);
+    // 判断文件的属性
+    // 如果, 不存在该文件
+    if (ret == -1) {
+        // 发送 404 的页面
+        SendResponseHeader(cfd, 404, "File Not Found", ".html", -1);
+        SendFile(cfd, "404.html");
+    }
+    // 如果是文件夹
+    if (S_ISDIR(st.st_mode)) {
+        // 不要Content-Length
+        SendResponseHeader(cfd, 200, "OK", FileType(".html").data(), -1);
+        SendDir(cfd, file);
+    } else if (S_ISREG(st.st_mode)) {
+        // 如果是文件
+        // 查找文件的信息
+        SendResponseHeader(cfd, 200, "OK", FileType(file).data(), st.st_size);
+        SendFile(cfd, file);
+    }
+}
+
+void NetHelper::SendResponseHeader(int cfd, int no, const char *desp, const char *type, long len) {
+
+    char buff[1024];
+    memset(buff, '\0', sizeof(buff));
+    sprintf(buff, "HTTP/1.1 %d %s\r\n", no, desp);
+    send(cfd, buff, strlen(buff), 0);
+    sprintf(buff, "Content-Type:%s\r\n", type);
+    sprintf(buff + strlen(buff), "Content-Length:%ld\r\n", len);
+    send(cfd, buff, strlen(buff), 0);
+    // 协议规定 --> 一定要有空行
+    send(cfd, "\r\n", 2, 0);
+}
+
+void NetHelper::SendDir(int cfd, const char *name) {
+
+    char buff[1024];
+    memset(buff, '\0', sizeof(buff));
+    sprintf(buff, "<html><head><title>DIR: %s</title></head>", name);
+    sprintf(buff + strlen(buff), "<body><h1>Current Dir: %s</h1><table>", name);
+    char path[1024];
+    memset(path, '\0', sizeof(path));
+    struct dirent** ptr;
+    int num = scandir(name, &ptr, nullptr, alphasort);
+    for (int i = 0; i < num; ++i) {
+        char *cname = ptr[i]->d_name;
+        if (strlen(name) > 0 && name[strlen(name) - 1] == '/') sprintf(path, "%s%s", name, cname);
+        else sprintf(path, "%s/%s", name, cname);
+
+        sprintf(buff + strlen(buff),
+                "<tr><td><a href=\"%s\">%s</a></td></tr>",
+                path, cname);
+        send(cfd, buff, strlen(buff), 0);
+        memset(buff, '\0', sizeof(buff));
+    }
+    sprintf(buff + strlen(buff), "</table></body></html>");
+    send(cfd, buff, strlen(buff), 0);
+
+}
+
+void NetHelper::SendFile(int cfd, const char *name) {
+    char buff[kMaxBuffer];
+    int fd = open(name, O_RDONLY);
+    ssize_t len;
+    // 循环读取文件
+    while ((len = read(fd, buff, kMaxBuffer)) > 0) {
+        send(cfd, buff, len, 0);
+    }
+    close(fd);
+}
+
 
 
 

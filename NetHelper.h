@@ -1,7 +1,3 @@
-//
-// Created by Admin on 2020/5/14.
-//
-
 #ifndef WEBSERVER_NETHELPER_H
 #define WEBSERVER_NETHELPER_H
 
@@ -29,10 +25,16 @@ public:
     static void ShutdownWR(int fd);
     static int BindAndListen(int port);
     static uint64_t GetExpiredTime(uint64_t timeout);
-
+    static std::string FileType(const char *name);
+    static int GetLine(int cfd, char *buff, int size);
+    static void HttpRequest(char *line, int cfd);
+    static void SendResponseHeader(int cfd, int no, const char *desp, const char *type, long len);
+    static void SendDir(int cfd, const char *name);
+    static void SendFile(int cfd, const char *name);
 private:
     static const size_t kMaxBuffer;
 };
+
 
 
 #endif //WEBSERVER_NETHELPER_H

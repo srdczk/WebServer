@@ -10,7 +10,10 @@
 class EventLoopThreadPool {
 public:
     EventLoopThreadPool(EventLoop *loop, int threadNum = std::thread::hardware_concurrency());
-    ~EventLoopThreadPool() { LOG_DEBUG("Thread Pool Exit"); }
+    ~EventLoopThreadPool() {
+        // TODO: Add Log
+//        LOG_DEBUG("Thread Pool Exit");
+    }
 
     void Start();
 

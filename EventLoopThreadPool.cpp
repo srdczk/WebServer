@@ -3,12 +3,11 @@
 //
 
 #include "EventLoopThreadPool.h"
-#include "../base/AsyncLog.h"
 
 EventLoopThreadPool::EventLoopThreadPool(EventLoop *loop, int threadNum): loop_(loop), started_(false), threadNum_(threadNum), next_(0) { }
 
 void EventLoopThreadPool::Start() {
-    loop_->AssertInThread();
+    loop_->AssertInLoop();
     started_ = true;
     for (int i = 0; i < threadNum_; ++i) {
         auto thread = std::make_shared<EventLoopThread>();
@@ -18,7 +17,7 @@ void EventLoopThreadPool::Start() {
 }
 
 EventLoop *EventLoopThreadPool::NextLoop() {
-    loop_->AssertInThread();
+    loop_->AssertInLoop();
     assert(started_);
     auto res = loop_;
     if (!loops_.empty()) {

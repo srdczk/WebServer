@@ -10,8 +10,9 @@
 // implement echo server
 class TcpServer {
 public:
+    typedef Channel *ChannelPtr;
     TcpServer(EventLoop *loop, int threadNum, int port);
-    ~TcpServer() = default;
+    ~TcpServer();
 
     void Start();
 
@@ -19,6 +20,7 @@ private:
     void HandleNewConnect();
     void HandleUpdate() { loop_->UpdatePoller(acceptChannel_); }
 private:
+    static const int kMaxFds = 65536;
     // max fds
     EventLoop *loop_;
     int threadNum_;
@@ -26,7 +28,8 @@ private:
     bool started_;
     int port_;
     int listenFd_;
-    std::shared_ptr<Channel> acceptChannel_;
+    ChannelPtr acceptChannel_;
+//    ChannelPtr channels_[kMaxFds];
 };
 
 

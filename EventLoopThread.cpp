@@ -3,15 +3,14 @@
 //
 
 #include "EventLoopThread.h"
-#include "../base/AsyncLog.h"
 #include <unistd.h>
 #include <fcntl.h>
 
 
-EventLoopThread::EventLoopThread(): loop_(nullptr), exiting_(false) { }
+EventLoopThread::EventLoopThread(): loop_(nullptr), exited_(false) { }
 
 EventLoopThread::~EventLoopThread() {
-    exiting_ = true;
+    exited_ = true;
     if (loop_) {
         loop_->Quit();
         if (thread_ && thread_->joinable())
